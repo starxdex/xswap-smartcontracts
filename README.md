@@ -18,6 +18,8 @@ BlackHole.sol -> 0x6020e198e4f597E57Aeb68F78DC69439231fa723
 
 Repurchase.sol -> 0xAeF3B3648cfec876e9b9c60d17eBa831A808f2b8
 
+Time
+
 ### OK链测试代币
 OKB	0xDa9d14072Ef2262c64240Da3A93fea2279253611
 
@@ -56,3 +58,6 @@ STAR/USDT Lp Token -> 0x12Fc541d35f9F040C9C6233988144DFa5EB0986A
 | ---------------- | ---- |
 | STAR/USDT | 0    |
 
+TODO:
+定时任务: 调用 oracel 更新价格
+定时任务: 定时 回购
