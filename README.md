@@ -20,6 +20,7 @@
 
 1. XTToken.sol -> 0xE5e399B4D0b721bD0B616E076e07E4416B78AA3E
 2. XswapFactory.sol -> 0x0D15a4e061430B99d528A0300F2781C082CCe1D5
+1. initCodeHash -> 0xc98deb82ecdb304bfdf8339c1722c5a79a6db6a3692c2d92c55fd2bddb8293ff
 3. XswapRouter.sol -> 0x92eA108F89a7c7bC1Fc9F3efC8c21Ac6020153Ae
 4. Oracle.sol -> 0x2619a22B1e399c473cC9A3C02FcEC826679F8D00
 5. SwapMining.sol -> 0xe5B876BDbfAf8e4E317cEE76889b03eb60a05E99
@@ -28,7 +29,7 @@
 8. Repurchase.sol -> 0x6530e37b261c0Ba6B227041c46013D302dfd65E8
 9. TimeRelease.sol -> 0x31030649514eE3007A10C067c2bD8bA5B507c933
 
-### 测试交易对
+### 测试交易对与矿池
 
 | 交易对 | 兑换比例 | Lp 地址 | 流动性矿池ID |
 | ------ | -------- | ------- | ------------ |
@@ -46,6 +47,8 @@
 | OKT/USDT 交易对 | 800:1000 | 0x2763233Cd2CA4A886b75047fE05663b45C985eb7 | pid: 11 |
 | OKT/ETHK 交易对 | 800:2000 | 0x82F93401F603AFf80DF19A3EAd5D500dDA362213 | pid: 12 |
 | OKT/BTCK 交易对 | 800:1 | 0x5562dAF6F0bd0ed651Df008416D6C114E83e8221 | pid: 13 |
+| XT 单币种 |  |  | pid: 14 |
+| USDT 单币种 |  |  | pid: 15 |
 
 ### 开启交易挖矿的币对
 XT/USDT, XT/BTCK, XT/OKB, XT/ETHK, XT/OKT
