@@ -1,13 +1,13 @@
 pragma solidity ^0.6.12;
 
 // This is a black hole contract address
-// no one can transfer STAR from the contract
+// no one can transfer XT from the contract
 contract BlackHole {
 
 }
 
 /*
-    Star is an automatic market-making decentralized exchange
+    Xswap is an automatic market-making decentralized exchange
 
 based on the concept of fund pools.It is similar in function
 

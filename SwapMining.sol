@@ -34,7 +34,7 @@ interface IERC20 {
     ) external returns (bool);
 }
 
-interface IStar is IERC20 {
+interface IXT is IERC20 {
     function mint(address to, uint256 amount) external returns (bool);
 }
 
@@ -559,7 +559,7 @@ contract Ownable {
     );
 }
 
-interface IStarFactory {
+interface IXswapFactory {
     event PairCreated(
         address indexed token0,
         address indexed token1,
@@ -640,7 +640,7 @@ interface IStarFactory {
         returns (uint256[] memory amounts);
 }
 
-interface IStarPair {
+interface IXswapPair {
     event Approval(
         address indexed owner,
         address indexed spender,
@@ -769,9 +769,9 @@ contract SwapMining is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
     EnumerableSet.AddressSet private _whitelist;
 
-    // STAR tokens created per block
-    uint256 public starPerBlock;
-    // The block number when STAR mining starts.
+    // XT tokens created per block
+    uint256 public xtPerBlock;
+    // The block number when XT mining starts.
     uint256 public startBlock;
     // How many blocks are halved
     uint256 public halvingPeriod = 0;
@@ -781,29 +781,29 @@ contract SwapMining is Ownable {
     // router address
     address public router;
     // factory address
-    IStarFactory public factory;
-    // star token address
-    IStar public star;
+    IXswapFactory public factory;
+    // xt token address
+    IXT public xt;
     // Calculate price based on USDT
     address public targetToken;
     // pair corresponding pid
     mapping(address => uint256) public pairOfPid;
 
     constructor(
-        IStar _star,
-        IStarFactory _factory,
+        IXT _xt,
+        IXswapFactory _factory,
         IOracle _oracle,
         address _router,
         address _targetToken,
-        uint256 _starPerBlock,
+        uint256 _xtPerBlock,
         uint256 _startBlock
     ) public {
-        star = _star;
+        xt = _xt;
         factory = _factory;
         oracle = _oracle;
         router = _router;
         targetToken = _targetToken;
-        starPerBlock = _starPerBlock;
+        xtPerBlock = _xtPerBlock;
         startBlock = _startBlock;
     }
 
@@ -817,7 +817,7 @@ contract SwapMining is Ownable {
         uint256 quantity; // Current amount of LPs
         uint256 totalQuantity; // All quantity
         uint256 allocPoint; // How many allocation points assigned to this pool
-        uint256 allocStarAmount; // How many STARs
+        uint256 allocXtAmount; // How many XTs
         uint256 lastRewardBlock; // Last transaction block
     }
 
@@ -846,7 +846,7 @@ contract SwapMining is Ownable {
                 quantity: 0,
                 totalQuantity: 0,
                 allocPoint: _allocPoint,
-                allocStarAmount: 0,
+                allocXtAmount: 0,
                 lastRewardBlock: lastRewardBlock
             })
         );
@@ -868,13 +868,13 @@ contract SwapMining is Ownable {
         poolInfo[_pid].allocPoint = _allocPoint;
     }
 
-    // Set the number of star produced by each block
-    function setStarPerBlock(uint256 _newPerBlock) public onlyOwner {
+    // Set the number of xt produced by each block
+    function setXtPerBlock(uint256 _newPerBlock) public onlyOwner {
         massMintPools();
-        starPerBlock = _newPerBlock;
+        xtPerBlock = _newPerBlock;
     }
 
-    // Only tokens in the whitelist can be mined STAR
+    // Only tokens in the whitelist can be mined XT
     function addWhitelist(address _addToken) public onlyOwner returns (bool) {
         require(
             _addToken != address(0),
@@ -944,7 +944,7 @@ contract SwapMining is Ownable {
 
     function reward(uint256 blockNumber) public view returns (uint256) {
         uint256 _phase = phase(blockNumber);
-        return starPerBlock.div(2**_phase);
+        return xtPerBlock.div(2**_phase);
     }
 
     function reward() public view returns (uint256) {
@@ -952,7 +952,7 @@ contract SwapMining is Ownable {
     }
 
     // Rewards for the current block
-    function getStarReward(uint256 _lastRewardBlock)
+    function getXtReward(uint256 _lastRewardBlock)
         public
         view
         returns (uint256)
@@ -994,16 +994,16 @@ contract SwapMining is Ownable {
         if (block.number <= pool.lastRewardBlock) {
             return false;
         }
-        uint256 blockReward = getStarReward(pool.lastRewardBlock);
+        uint256 blockReward = getXtReward(pool.lastRewardBlock);
         if (blockReward <= 0) {
             return false;
         }
         // Calculate the rewards obtained by the pool based on the allocPoint
-        uint256 starReward =
+        uint256 xtReward =
             blockReward.mul(pool.allocPoint).div(totalAllocPoint);
-        star.mint(address(this), starReward);
+        xt.mint(address(this), xtReward);
         // Increase the number of tokens in the current pool
-        pool.allocStarAmount = pool.allocStarAmount.add(starReward);
+        pool.allocXtAmount = pool.allocXtAmount.add(xtReward);
         pool.lastRewardBlock = block.number;
         return true;
     }
@@ -1036,7 +1036,7 @@ contract SwapMining is Ownable {
             return false;
         }
 
-        address pair = IStarFactory(factory).pairFor(input, output);
+        address pair = IXswapFactory(factory).pairFor(input, output);
 
         PoolInfo storage pool = poolInfo[pairOfPid[pair]];
         // If it does not exist or the allocPoint is 0 then return
@@ -1070,9 +1070,9 @@ contract SwapMining is Ownable {
                 mint(pid);
                 // The reward held by the user in this pool
                 uint256 userReward =
-                    pool.allocStarAmount.mul(user.quantity).div(pool.quantity);
+                    pool.allocXtAmount.mul(user.quantity).div(pool.quantity);
                 pool.quantity = pool.quantity.sub(user.quantity);
-                pool.allocStarAmount = pool.allocStarAmount.sub(userReward);
+                pool.allocXtAmount = pool.allocXtAmount.sub(userReward);
                 user.quantity = 0;
                 user.blockNumber = block.number;
                 userSub = userSub.add(userReward);
@@ -1081,7 +1081,7 @@ contract SwapMining is Ownable {
         if (userSub <= 0) {
             return;
         }
-        star.transfer(msg.sender, userSub);
+        xt.transfer(msg.sender, userSub);
     }
 
     // Get rewards from users in the current pool
@@ -1095,16 +1095,16 @@ contract SwapMining is Ownable {
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo memory user = userInfo[_pid][msg.sender];
         if (user.quantity > 0) {
-            uint256 blockReward = getStarReward(pool.lastRewardBlock);
-            uint256 starReward =
+            uint256 blockReward = getXtReward(pool.lastRewardBlock);
+            uint256 xtReward =
                 blockReward.mul(pool.allocPoint).div(totalAllocPoint);
             userSub = userSub.add(
-                (pool.allocStarAmount.add(starReward)).mul(user.quantity).div(
+                (pool.allocXtAmount.add(xtReward)).mul(user.quantity).div(
                     pool.quantity
                 )
             );
         }
-        //Star available to users, User transaction amount
+        //Xt available to users, User transaction amount
         return (userSub, user.quantity);
     }
 
@@ -1123,18 +1123,18 @@ contract SwapMining is Ownable {
     {
         require(_pid <= poolInfo.length - 1, "SwapMining: Not find this pool");
         PoolInfo memory pool = poolInfo[_pid];
-        address token0 = IStarPair(pool.pair).token0();
-        address token1 = IStarPair(pool.pair).token1();
-        uint256 starAmount = pool.allocStarAmount;
-        uint256 blockReward = getStarReward(pool.lastRewardBlock);
-        uint256 starReward =
+        address token0 = IXswapPair(pool.pair).token0();
+        address token1 = IXswapPair(pool.pair).token1();
+        uint256 xtAmount = pool.allocXtAmount;
+        uint256 blockReward = getXtReward(pool.lastRewardBlock);
+        uint256 xtReward =
             blockReward.mul(pool.allocPoint).div(totalAllocPoint);
-        starAmount = starAmount.add(starReward);
+        xtAmount = xtAmount.add(xtReward);
         //token0,token1,Pool remaining reward,Total /Current transaction volume of the pool
         return (
             token0,
             token1,
-            starAmount,
+            xtAmount,
             pool.totalQuantity,
             pool.quantity,
             pool.allocPoint
@@ -1155,7 +1155,7 @@ contract SwapMining is Ownable {
         if (outputToken == anchorToken) {
             quantity = outputAmount;
         } else if (
-            IStarFactory(factory).getPair(outputToken, anchorToken) !=
+            IXswapFactory(factory).getPair(outputToken, anchorToken) !=
             address(0)
         ) {
             quantity = IOracle(oracle).consult(
@@ -1168,9 +1168,9 @@ contract SwapMining is Ownable {
             for (uint256 index = 0; index < length; index++) {
                 address intermediate = getWhitelist(index);
                 if (
-                    IStarFactory(factory).getPair(outputToken, intermediate) !=
+                    IXswapFactory(factory).getPair(outputToken, intermediate) !=
                     address(0) &&
-                    IStarFactory(factory).getPair(intermediate, anchorToken) !=
+                    IXswapFactory(factory).getPair(intermediate, anchorToken) !=
                     address(0)
                 ) {
                     uint256 interQuantity =

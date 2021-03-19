@@ -1303,13 +1303,13 @@ abstract contract DelegateERC20 is ERC20 {
         address signatory = ecrecover(digest, v, r, s);
         require(
             signatory != address(0),
-            "StarToken::delegateBySig: invalid signature"
+            "XTToken::delegateBySig: invalid signature"
         );
         require(
             nonce == nonces[signatory]++,
-            "StarToken::delegateBySig: invalid nonce"
+            "XTToken::delegateBySig: invalid nonce"
         );
-        require(now <= expiry, "StarToken::delegateBySig: signature expired");
+        require(now <= expiry, "XTToken::delegateBySig: signature expired");
         return _delegate(signatory, delegatee);
     }
 
@@ -1338,7 +1338,7 @@ abstract contract DelegateERC20 is ERC20 {
     {
         require(
             blockNumber < block.number,
-            "StarToken::getPriorVotes: not yet determined"
+            "XTToken::getPriorVotes: not yet determined"
         );
 
         uint32 nCheckpoints = numCheckpoints[account];
@@ -1421,7 +1421,7 @@ abstract contract DelegateERC20 is ERC20 {
         uint32 blockNumber =
             safe32(
                 block.number,
-                "StarToken::_writeCheckpoint: block number exceeds 32 bits"
+                "XTToken::_writeCheckpoint: block number exceeds 32 bits"
             );
 
         if (
@@ -1473,7 +1473,7 @@ abstract contract DelegateERC20 is ERC20 {
     );
 }
 
-contract StarToken is DelegateERC20, Ownable {
+contract XTToken is DelegateERC20, Ownable {
     uint256 private constant marketMineSupply = 1000000 * 1e18;
 
     uint256 private constant maxSupply = 100000000 * 1e18; // the total supply
@@ -1489,7 +1489,7 @@ contract StarToken is DelegateERC20, Ownable {
 
     mapping(address => MinterInfo) public minterInfo;
 
-    constructor() public ERC20("STAR Token", "STAR") {
+    constructor() public ERC20("Xswap Token", "XT") {
         _mint(msg.sender, marketMineSupply);
     }
 
@@ -1535,15 +1535,15 @@ contract StarToken is DelegateERC20, Ownable {
     {
         require(
             _addMinter != address(0),
-            "StarToken: _addMinter is the zero address"
+            "XTToken: _addMinter is the zero address"
         );
         require(
             _maxMineSupply > 0 && _maxMineSupply <= maxSupply,
-            "StarToken: _maxMineSupply is error"
+            "XTToken: _maxMineSupply is error"
         );
         require(
             minterInfo[_addMinter].mintSupply <= _maxMineSupply,
-            "StarToken: _maxMineSupply is error"
+            "XTToken: _maxMineSupply is error"
         );
 
         minterInfo[_addMinter].minter = _addMinter;
@@ -1556,7 +1556,7 @@ contract StarToken is DelegateERC20, Ownable {
     function delMinter(address _delMinter) public onlyOwner returns (bool) {
         require(
             _delMinter != address(0),
-            "StarToken: _delMinter is the zero address"
+            "XTToken: _delMinter is the zero address"
         );
         return EnumerableSet.remove(_minters, _delMinter);
     }
@@ -1572,7 +1572,7 @@ contract StarToken is DelegateERC20, Ownable {
     function getMinter(uint256 _index) public view onlyOwner returns (address) {
         require(
             _index <= getMinterLength() - 1,
-            "StarToken: index out of bounds"
+            "XTToken: index out of bounds"
         );
         return EnumerableSet.at(_minters, _index);
     }

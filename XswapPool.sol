@@ -927,7 +927,7 @@ library EnumerableSet {
     }
 }
 
-interface IStar is IERC20 {
+interface IXT is IERC20 {
     function mint(address to, uint256 amount) external returns (bool);
 }
 
@@ -958,17 +958,17 @@ contract OktLinkPool is Ownable {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
-        uint256 allocPoint; // How many allocation points assigned to this pool. STARs to distribute per block.
-        uint256 lastRewardBlock; // Last block number that STARs distribution occurs.
-        uint256 accStarPerShare; // Accumulated STARs per share, times 1e12.
+        uint256 allocPoint; // How many allocation points assigned to this pool. XTs to distribute per block.
+        uint256 lastRewardBlock; // Last block number that XTs distribution occurs.
+        uint256 accXtPerShare; // Accumulated XTs per share, times 1e12.
         uint256 accMultLpPerShare; //Accumulated multLp per share
         uint256 totalAmount; // Total amount of current pool deposit.
     }
 
-    // The STAR Token!
-    IStar public star;
-    // STAR tokens created per block.
-    uint256 public starPerBlock;
+    // The XT Token!
+    IXT public xt;
+    // XT tokens created per block.
+    uint256 public xtPerBlock;
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
@@ -981,7 +981,7 @@ contract OktLinkPool is Ownable {
     bool public paused = false;
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
-    // The block number when STAR mining starts.
+    // The block number when XT mining starts.
     uint256 public startBlock;
     // multLP MasterChef
     address public multLpChef;
@@ -999,12 +999,12 @@ contract OktLinkPool is Ownable {
     );
 
     constructor(
-        IStar _star,
-        uint256 _starPerBlock,
+        IXT _xt,
+        uint256 _xtPerBlock,
         uint256 _startBlock
     ) public {
-        star = _star;
-        starPerBlock = _starPerBlock;
+        xt = _xt;
+        xtPerBlock = _xtPerBlock;
         startBlock = _startBlock;
     }
 
@@ -1012,10 +1012,10 @@ contract OktLinkPool is Ownable {
         halvingPeriod = _block;
     }
 
-    // Set the number of star produced by each block
-    function setStarPerBlock(uint256 _newPerBlock) public onlyOwner {
+    // Set the number of xt produced by each block
+    function setXtPerBlock(uint256 _newPerBlock) public onlyOwner {
         massUpdatePools();
-        starPerBlock = _newPerBlock;
+        xtPerBlock = _newPerBlock;
     }
 
     function poolLength() public view returns (uint256) {
@@ -1102,7 +1102,7 @@ contract OktLinkPool is Ownable {
                 lpToken: _lpToken,
                 allocPoint: _allocPoint,
                 lastRewardBlock: lastRewardBlock,
-                accStarPerShare: 0,
+                accXtPerShare: 0,
                 accMultLpPerShare: 0,
                 totalAmount: 0
             })
@@ -1110,7 +1110,7 @@ contract OktLinkPool is Ownable {
         LpOfPid[address(_lpToken)] = poolLength() - 1;
     }
 
-    // Update the given pool's STAR allocation point. Can only be called by the owner.
+    // Update the given pool's XT allocation point. Can only be called by the owner.
     function set(
         uint256 _pid,
         uint256 _allocPoint,
@@ -1143,10 +1143,10 @@ contract OktLinkPool is Ownable {
 
     function reward(uint256 blockNumber) public view returns (uint256) {
         uint256 _phase = phase(blockNumber);
-        return starPerBlock.div(2**_phase);
+        return xtPerBlock.div(2**_phase);
     }
 
-    function getStarBlockReward(uint256 _lastRewardBlock)
+    function getXtBlockReward(uint256 _lastRewardBlock)
         public
         view
         returns (uint256)
@@ -1196,22 +1196,22 @@ contract OktLinkPool is Ownable {
                 return;
             }
         }
-        uint256 blockReward = getStarBlockReward(pool.lastRewardBlock);
+        uint256 blockReward = getXtBlockReward(pool.lastRewardBlock);
         if (blockReward <= 0) {
             return;
         }
-        uint256 starReward =
+        uint256 xtReward =
             blockReward.mul(pool.allocPoint).div(totalAllocPoint);
-        bool minRet = star.mint(address(this), starReward);
+        bool minRet = xt.mint(address(this), xtReward);
         if (minRet) {
-            pool.accStarPerShare = pool.accStarPerShare.add(
-                starReward.mul(1e12).div(lpSupply)
+            pool.accXtPerShare = pool.accXtPerShare.add(
+                xtReward.mul(1e12).div(lpSupply)
             );
         }
         pool.lastRewardBlock = block.number;
     }
 
-    // View function to see pending STARs on frontend.
+    // View function to see pending XTs on frontend.
     function pending(uint256 _pid, address _user)
         external
         view
@@ -1219,23 +1219,23 @@ contract OktLinkPool is Ownable {
     {
         PoolInfo storage pool = poolInfo[_pid];
         if (isMultLP(address(pool.lpToken))) {
-            (uint256 starAmount, uint256 tokenAmount) =
-                pendingStarAndToken(_pid, _user);
-            return (starAmount, tokenAmount);
+            (uint256 xtAmount, uint256 tokenAmount) =
+                pendingXtAndToken(_pid, _user);
+            return (xtAmount, tokenAmount);
         } else {
-            uint256 starAmount = pendingStar(_pid, _user);
-            return (starAmount, 0);
+            uint256 xtAmount = pendingXt(_pid, _user);
+            return (xtAmount, 0);
         }
     }
 
-    function pendingStarAndToken(uint256 _pid, address _user)
+    function pendingXtAndToken(uint256 _pid, address _user)
         private
         view
         returns (uint256, uint256)
     {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accStarPerShare = pool.accStarPerShare;
+        uint256 accXtPerShare = pool.accXtPerShare;
         uint256 accMultLpPerShare = pool.accMultLpPerShare;
         if (user.amount > 0) {
             uint256 TokenPending =
@@ -1251,14 +1251,14 @@ contract OktLinkPool is Ownable {
                     user.multLpRewardDebt
                 );
             if (block.number > pool.lastRewardBlock) {
-                uint256 blockReward = getStarBlockReward(pool.lastRewardBlock);
-                uint256 starReward =
+                uint256 blockReward = getXtBlockReward(pool.lastRewardBlock);
+                uint256 xtReward =
                     blockReward.mul(pool.allocPoint).div(totalAllocPoint);
-                accStarPerShare = accStarPerShare.add(
-                    starReward.mul(1e12).div(pool.totalAmount)
+                accXtPerShare = accXtPerShare.add(
+                    xtReward.mul(1e12).div(pool.totalAmount)
                 );
                 return (
-                    user.amount.mul(accStarPerShare).div(1e12).sub(
+                    user.amount.mul(accXtPerShare).div(1e12).sub(
                         user.rewardDebt
                     ),
                     userPending
@@ -1266,7 +1266,7 @@ contract OktLinkPool is Ownable {
             }
             if (block.number == pool.lastRewardBlock) {
                 return (
-                    user.amount.mul(accStarPerShare).div(1e12).sub(
+                    user.amount.mul(accXtPerShare).div(1e12).sub(
                         user.rewardDebt
                     ),
                     userPending
@@ -1276,31 +1276,31 @@ contract OktLinkPool is Ownable {
         return (0, 0);
     }
 
-    function pendingStar(uint256 _pid, address _user)
+    function pendingXt(uint256 _pid, address _user)
         private
         view
         returns (uint256)
     {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accStarPerShare = pool.accStarPerShare;
+        uint256 accXtPerShare = pool.accXtPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (user.amount > 0) {
             if (block.number > pool.lastRewardBlock) {
-                uint256 blockReward = getStarBlockReward(pool.lastRewardBlock);
-                uint256 starReward =
+                uint256 blockReward = getXtBlockReward(pool.lastRewardBlock);
+                uint256 xtReward =
                     blockReward.mul(pool.allocPoint).div(totalAllocPoint);
-                accStarPerShare = accStarPerShare.add(
-                    starReward.mul(1e12).div(lpSupply)
+                accXtPerShare = accXtPerShare.add(
+                    xtReward.mul(1e12).div(lpSupply)
                 );
                 return
-                    user.amount.mul(accStarPerShare).div(1e12).sub(
+                    user.amount.mul(accXtPerShare).div(1e12).sub(
                         user.rewardDebt
                     );
             }
             if (block.number == pool.lastRewardBlock) {
                 return
-                    user.amount.mul(accStarPerShare).div(1e12).sub(
+                    user.amount.mul(accXtPerShare).div(1e12).sub(
                         user.rewardDebt
                     );
             }
@@ -1308,17 +1308,17 @@ contract OktLinkPool is Ownable {
         return 0;
     }
 
-    // Deposit LP tokens to OktLinkPool for STAR allocation.
+    // Deposit LP tokens to OktLinkPool for XT allocation.
     function deposit(uint256 _pid, uint256 _amount) public notPause {
         PoolInfo storage pool = poolInfo[_pid];
         if (isMultLP(address(pool.lpToken))) {
-            depositStarAndToken(_pid, _amount, msg.sender);
+            depositXtAndToken(_pid, _amount, msg.sender);
         } else {
-            depositStar(_pid, _amount, msg.sender);
+            depositXt(_pid, _amount, msg.sender);
         }
     }
 
-    function depositStarAndToken(
+    function depositXtAndToken(
         uint256 _pid,
         uint256 _amount,
         address _user
@@ -1328,11 +1328,11 @@ contract OktLinkPool is Ownable {
         updatePool(_pid);
         if (user.amount > 0) {
             uint256 pendingAmount =
-                user.amount.mul(pool.accStarPerShare).div(1e12).sub(
+                user.amount.mul(pool.accXtPerShare).div(1e12).sub(
                     user.rewardDebt
                 );
             if (pendingAmount > 0) {
-                safeStarTransfer(_user, pendingAmount);
+                safeXtTransfer(_user, pendingAmount);
             }
             uint256 beforeToken = IERC20(multLpToken).balanceOf(address(this));
             IMasterChefOktLink(multLpChef).deposit(poolCorrespond[_pid], 0);
@@ -1373,14 +1373,14 @@ contract OktLinkPool is Ownable {
                 pool.totalAmount = pool.totalAmount.add(_amount);
             }
         }
-        user.rewardDebt = user.amount.mul(pool.accStarPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accXtPerShare).div(1e12);
         user.multLpRewardDebt = user.amount.mul(pool.accMultLpPerShare).div(
             1e12
         );
         emit Deposit(_user, _pid, _amount);
     }
 
-    function depositStar(
+    function depositXt(
         uint256 _pid,
         uint256 _amount,
         address _user
@@ -1390,11 +1390,11 @@ contract OktLinkPool is Ownable {
         updatePool(_pid);
         if (user.amount > 0) {
             uint256 pendingAmount =
-                user.amount.mul(pool.accStarPerShare).div(1e12).sub(
+                user.amount.mul(pool.accXtPerShare).div(1e12).sub(
                     user.rewardDebt
                 );
             if (pendingAmount > 0) {
-                safeStarTransfer(_user, pendingAmount);
+                safeXtTransfer(_user, pendingAmount);
             }
         }
         if (_amount > 0) {
@@ -1402,7 +1402,7 @@ contract OktLinkPool is Ownable {
             user.amount = user.amount.add(_amount);
             pool.totalAmount = pool.totalAmount.add(_amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accStarPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accXtPerShare).div(1e12);
         emit Deposit(_user, _pid, _amount);
     }
 
@@ -1410,27 +1410,25 @@ contract OktLinkPool is Ownable {
     function withdraw(uint256 _pid, uint256 _amount) public notPause {
         PoolInfo storage pool = poolInfo[_pid];
         if (isMultLP(address(pool.lpToken))) {
-            withdrawStarAndToken(_pid, _amount, msg.sender);
+            withdrawXtAndToken(_pid, _amount, msg.sender);
         } else {
-            withdrawStar(_pid, _amount, msg.sender);
+            withdrawXt(_pid, _amount, msg.sender);
         }
     }
 
-    function withdrawStarAndToken(
+    function withdrawXtAndToken(
         uint256 _pid,
         uint256 _amount,
         address _user
     ) private {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        require(user.amount >= _amount, "withdrawStarAndToken: not good");
+        require(user.amount >= _amount, "withdrawXtAndToken: not good");
         updatePool(_pid);
         uint256 pendingAmount =
-            user.amount.mul(pool.accStarPerShare).div(1e12).sub(
-                user.rewardDebt
-            );
+            user.amount.mul(pool.accXtPerShare).div(1e12).sub(user.rewardDebt);
         if (pendingAmount > 0) {
-            safeStarTransfer(_user, pendingAmount);
+            safeXtTransfer(_user, pendingAmount);
         }
         if (_amount > 0) {
             uint256 beforeToken = IERC20(multLpToken).balanceOf(address(this));
@@ -1453,35 +1451,33 @@ contract OktLinkPool is Ownable {
             pool.totalAmount = pool.totalAmount.sub(_amount);
             pool.lpToken.safeTransfer(_user, _amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accStarPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accXtPerShare).div(1e12);
         user.multLpRewardDebt = user.amount.mul(pool.accMultLpPerShare).div(
             1e12
         );
         emit Withdraw(_user, _pid, _amount);
     }
 
-    function withdrawStar(
+    function withdrawXt(
         uint256 _pid,
         uint256 _amount,
         address _user
     ) private {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        require(user.amount >= _amount, "withdrawStar: not good");
+        require(user.amount >= _amount, "withdrawXt: not good");
         updatePool(_pid);
         uint256 pendingAmount =
-            user.amount.mul(pool.accStarPerShare).div(1e12).sub(
-                user.rewardDebt
-            );
+            user.amount.mul(pool.accXtPerShare).div(1e12).sub(user.rewardDebt);
         if (pendingAmount > 0) {
-            safeStarTransfer(_user, pendingAmount);
+            safeXtTransfer(_user, pendingAmount);
         }
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
             pool.totalAmount = pool.totalAmount.sub(_amount);
             pool.lpToken.safeTransfer(_user, _amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accStarPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accXtPerShare).div(1e12);
         emit Withdraw(_user, _pid, _amount);
     }
 
@@ -1489,15 +1485,13 @@ contract OktLinkPool is Ownable {
     function emergencyWithdraw(uint256 _pid) public notPause {
         PoolInfo storage pool = poolInfo[_pid];
         if (isMultLP(address(pool.lpToken))) {
-            emergencyWithdrawStarAndToken(_pid, msg.sender);
+            emergencyWithdrawXtAndToken(_pid, msg.sender);
         } else {
-            emergencyWithdrawStar(_pid, msg.sender);
+            emergencyWithdrawXt(_pid, msg.sender);
         }
     }
 
-    function emergencyWithdrawStarAndToken(uint256 _pid, address _user)
-        private
-    {
+    function emergencyWithdrawXtAndToken(uint256 _pid, address _user) private {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 amount = user.amount;
@@ -1514,7 +1508,7 @@ contract OktLinkPool is Ownable {
         emit EmergencyWithdraw(_user, _pid, amount);
     }
 
-    function emergencyWithdrawStar(uint256 _pid, address _user) private {
+    function emergencyWithdrawXt(uint256 _pid, address _user) private {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 amount = user.amount;
@@ -1525,13 +1519,13 @@ contract OktLinkPool is Ownable {
         emit EmergencyWithdraw(_user, _pid, amount);
     }
 
-    // Safe STAR transfer function, just in case if rounding error causes pool to not have enough STARs.
-    function safeStarTransfer(address _to, uint256 _amount) internal {
-        uint256 starBal = star.balanceOf(address(this));
-        if (_amount > starBal) {
-            star.transfer(_to, starBal);
+    // Safe XT transfer function, just in case if rounding error causes pool to not have enough XTs.
+    function safeXtTransfer(address _to, uint256 _amount) internal {
+        uint256 xtBal = xt.balanceOf(address(this));
+        if (_amount > xtBal) {
+            xt.transfer(_to, xtBal);
         } else {
-            star.transfer(_to, _amount);
+            xt.transfer(_to, _amount);
         }
     }
 

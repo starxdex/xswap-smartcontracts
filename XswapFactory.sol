@@ -1,6 +1,6 @@
 pragma solidity =0.5.16;
 
-interface IStarFactory {
+interface IXswapFactory {
     event PairCreated(
         address indexed token0,
         address indexed token1,
@@ -81,7 +81,7 @@ interface IStarFactory {
         returns (uint256[] memory amounts);
 }
 
-interface IStarPair {
+interface IXswapPair {
     event Approval(
         address indexed owner,
         address indexed spender,
@@ -195,7 +195,7 @@ interface IStarPair {
     function initialize(address, address) external;
 }
 
-interface IStarERC20 {
+interface IXTERC20 {
     event Approval(
         address indexed owner,
         address indexed spender,
@@ -288,11 +288,11 @@ interface IHswapV2Callee {
     ) external;
 }
 
-contract StarERC20 is IStarERC20 {
+contract XTERC20 is IXTERC20 {
     using SafeMath for uint256;
 
-    string public constant name = "HSwap LP Token";
-    string public constant symbol = "HSTAR";
+    string public constant name = "Xswap LP Token";
+    string public constant symbol = "OKXT";
     uint8 public constant decimals = 18;
     uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;
@@ -393,7 +393,7 @@ contract StarERC20 is IStarERC20 {
         bytes32 r,
         bytes32 s
     ) external {
-        require(deadline >= block.timestamp, "StarSwap: EXPIRED");
+        require(deadline >= block.timestamp, "Xswap: EXPIRED");
         bytes32 digest =
             keccak256(
                 abi.encodePacked(
@@ -414,13 +414,13 @@ contract StarERC20 is IStarERC20 {
         address recoveredAddress = ecrecover(digest, v, r, s);
         require(
             recoveredAddress != address(0) && recoveredAddress == owner,
-            "StarSwap: INVALID_SIGNATURE"
+            "Xswap: INVALID_SIGNATURE"
         );
         _approve(owner, spender, value);
     }
 }
 
-contract StarPair is IStarPair, StarERC20 {
+contract XswapPair is IXswapPair, XTERC20 {
     using SafeMath for uint256;
     using UQ112x112 for uint224;
 
@@ -442,7 +442,7 @@ contract StarPair is IStarPair, StarERC20 {
 
     uint256 private unlocked = 1;
     modifier lock() {
-        require(unlocked == 1, "StarSwap: LOCKED");
+        require(unlocked == 1, "Xswap: LOCKED");
         unlocked = 0;
         _;
         unlocked = 1;
@@ -471,7 +471,7 @@ contract StarPair is IStarPair, StarERC20 {
             token.call(abi.encodeWithSelector(SELECTOR, to, value));
         require(
             success && (data.length == 0 || abi.decode(data, (bool))),
-            "StarSwap: TRANSFER_FAILED"
+            "Xswap: TRANSFER_FAILED"
         );
     }
 
@@ -498,7 +498,7 @@ contract StarPair is IStarPair, StarERC20 {
 
     // called once by the factory at time of deployment
     function initialize(address _token0, address _token1) external {
-        require(msg.sender == factory, "StarSwap: FORBIDDEN");
+        require(msg.sender == factory, "Xswap: FORBIDDEN");
         // sufficient check
         token0 = _token0;
         token1 = _token1;
@@ -513,7 +513,7 @@ contract StarPair is IStarPair, StarERC20 {
     ) private {
         require(
             balance0 <= uint112(-1) && balance1 <= uint112(-1),
-            "StarSwap: OVERFLOW"
+            "Xswap: OVERFLOW"
         );
         uint32 blockTimestamp = uint32(block.timestamp % 2**32);
         uint32 timeElapsed = blockTimestamp - blockTimestampLast;
@@ -538,7 +538,7 @@ contract StarPair is IStarPair, StarERC20 {
         private
         returns (bool feeOn)
     {
-        address feeTo = IStarFactory(factory).feeTo();
+        address feeTo = IXswapFactory(factory).feeTo();
         feeOn = feeTo != address(0);
         uint256 _kLast = kLast;
         // gas savings
@@ -550,7 +550,7 @@ contract StarPair is IStarPair, StarERC20 {
                 if (rootK > rootKLast) {
                     uint256 numerator = totalSupply.mul(rootK.sub(rootKLast));
                     uint256 denominator =
-                        rootK.mul(IStarFactory(factory).feeToRate()).add(
+                        rootK.mul(IXswapFactory(factory).feeToRate()).add(
                             rootKLast
                         );
                     uint256 liquidity = numerator / denominator;
@@ -586,7 +586,7 @@ contract StarPair is IStarPair, StarERC20 {
                 amount1.mul(_totalSupply) / _reserve1
             );
         }
-        require(liquidity > 0, "StarSwap: INSUFFICIENT_LIQUIDITY_MINTED");
+        require(liquidity > 0, "Xswap: INSUFFICIENT_LIQUIDITY_MINTED");
         _mint(to, liquidity);
 
         _update(balance0, balance1, _reserve0, _reserve1);
@@ -620,7 +620,7 @@ contract StarPair is IStarPair, StarERC20 {
         // using balances ensures pro-rata distribution
         require(
             amount0 > 0 && amount1 > 0,
-            "StarSwap: INSUFFICIENT_LIQUIDITY_BURNED"
+            "Xswap: INSUFFICIENT_LIQUIDITY_BURNED"
         );
         _burn(address(this), liquidity);
         _safeTransfer(_token0, to, amount0);
@@ -643,13 +643,13 @@ contract StarPair is IStarPair, StarERC20 {
     ) external lock {
         require(
             amount0Out > 0 || amount1Out > 0,
-            "StarSwap: INSUFFICIENT_OUTPUT_AMOUNT"
+            "Xswap: INSUFFICIENT_OUTPUT_AMOUNT"
         );
         (uint112 _reserve0, uint112 _reserve1, ) = getReserves();
         // gas savings
         require(
             amount0Out < _reserve0 && amount1Out < _reserve1,
-            "StarSwap: INSUFFICIENT_LIQUIDITY"
+            "Xswap: INSUFFICIENT_LIQUIDITY"
         );
 
         uint256 balance0;
@@ -658,7 +658,7 @@ contract StarPair is IStarPair, StarERC20 {
             // scope for _token{0,1}, avoids stack too deep errors
             address _token0 = token0;
             address _token1 = token1;
-            require(to != _token0 && to != _token1, "StarSwap: INVALID_TO");
+            require(to != _token0 && to != _token1, "Xswap: INVALID_TO");
             if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out);
             // optimistically transfer tokens
             if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out);
@@ -683,7 +683,7 @@ contract StarPair is IStarPair, StarERC20 {
                 : 0;
         require(
             amount0In > 0 || amount1In > 0,
-            "StarSwap: INSUFFICIENT_INPUT_AMOUNT"
+            "Xswap: INSUFFICIENT_INPUT_AMOUNT"
         );
         {
             // scope for reserve{0,1}Adjusted, avoids stack too deep errors
@@ -692,7 +692,7 @@ contract StarPair is IStarPair, StarERC20 {
             require(
                 balance0Adjusted.mul(balance1Adjusted) >=
                     uint256(_reserve0).mul(_reserve1).mul(1000**2),
-                "StarSwap: K"
+                "Xswap: K"
             );
         }
 
@@ -748,7 +748,7 @@ contract StarPair is IStarPair, StarERC20 {
     }
 }
 
-contract StarFactory is IStarFactory {
+contract XswapFactory is IXswapFactory {
     using SafeMath for uint256;
     address public feeTo;
     address public feeToSetter;
@@ -778,21 +778,21 @@ contract StarFactory is IStarFactory {
         external
         returns (address pair)
     {
-        require(tokenA != tokenB, "StarSwapFactory: IDENTICAL_ADDRESSES");
+        require(tokenA != tokenB, "XswapFactory: IDENTICAL_ADDRESSES");
         (address token0, address token1) =
             tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), "StarSwapFactory: ZERO_ADDRESS");
+        require(token0 != address(0), "XswapFactory: ZERO_ADDRESS");
         require(
             getPair[token0][token1] == address(0),
-            "StarSwapFactory: PAIR_EXISTS"
+            "XswapFactory: PAIR_EXISTS"
         );
         // single check is sufficient
-        bytes memory bytecode = type(StarPair).creationCode;
+        bytes memory bytecode = type(XswapPair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        IStarPair(pair).initialize(token0, token1);
+        IXswapPair(pair).initialize(token0, token1);
         getPair[token0][token1] = pair;
         getPair[token1][token0] = pair;
         // populate mapping in the reverse direction
@@ -801,30 +801,30 @@ contract StarFactory is IStarFactory {
     }
 
     function setFeeTo(address _feeTo) external {
-        require(msg.sender == feeToSetter, "StarSwapFactory: FORBIDDEN");
+        require(msg.sender == feeToSetter, "XswapFactory: FORBIDDEN");
         feeTo = _feeTo;
     }
 
     function setFeeToSetter(address _feeToSetter) external {
-        require(msg.sender == feeToSetter, "StarSwapFactory: FORBIDDEN");
+        require(msg.sender == feeToSetter, "XswapFactory: FORBIDDEN");
         require(
             _feeToSetter != address(0),
-            "StarSwapFactory: FeeToSetter is zero address"
+            "XswapFactory: FeeToSetter is zero address"
         );
         feeToSetter = _feeToSetter;
     }
 
     function setFeeToRate(uint256 _rate) external {
-        require(msg.sender == feeToSetter, "StarSwapFactory: FORBIDDEN");
-        require(_rate > 0, "StarSwapFactory: FEE_TO_RATE_OVERFLOW");
+        require(msg.sender == feeToSetter, "XswapFactory: FORBIDDEN");
+        require(_rate > 0, "XswapFactory: FEE_TO_RATE_OVERFLOW");
         feeToRate = _rate.sub(1);
     }
 
     function setInitCodeHash(bytes32 _initCodeHash) external {
-        require(msg.sender == feeToSetter, "StarSwapFactory: FORBIDDEN");
+        require(msg.sender == feeToSetter, "XswapFactory: FORBIDDEN");
         require(
             initCode == false,
-            "StarSwapFactory: Do not repeat settings initCodeHash"
+            "XswapFactory: Do not repeat settings initCodeHash"
         );
         initCodeHash = _initCodeHash;
         initCode = true;
@@ -836,15 +836,15 @@ contract StarFactory is IStarFactory {
         pure
         returns (address token0, address token1)
     {
-        require(tokenA != tokenB, "StarSwapFactory: IDENTICAL_ADDRESSES");
+        require(tokenA != tokenB, "XswapFactory: IDENTICAL_ADDRESSES");
         (token0, token1) = tokenA < tokenB
             ? (tokenA, tokenB)
             : (tokenB, tokenA);
-        require(token0 != address(0), "StarSwapFactory: ZERO_ADDRESS");
+        require(token0 != address(0), "XswapFactory: ZERO_ADDRESS");
     }
 
     function getInitCodeHash() public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(type(StarPair).creationCode));
+        return keccak256(abi.encodePacked(type(XswapPair).creationCode));
     }
 
     // calculates the CREATE2 address for a pair without making any external calls
@@ -876,7 +876,7 @@ contract StarFactory is IStarFactory {
     {
         (address token0, ) = sortTokens(tokenA, tokenB);
         (uint256 reserve0, uint256 reserve1, ) =
-            IStarPair(pairFor(tokenA, tokenB)).getReserves();
+            IXswapPair(pairFor(tokenA, tokenB)).getReserves();
         (reserveA, reserveB) = tokenA == token0
             ? (reserve0, reserve1)
             : (reserve1, reserve0);
@@ -888,10 +888,10 @@ contract StarFactory is IStarFactory {
         uint256 reserveA,
         uint256 reserveB
     ) public pure returns (uint256 amountB) {
-        require(amountA > 0, "StarSwapFactory: INSUFFICIENT_AMOUNT");
+        require(amountA > 0, "XswapFactory: INSUFFICIENT_AMOUNT");
         require(
             reserveA > 0 && reserveB > 0,
-            "StarSwapFactory: INSUFFICIENT_LIQUIDITY"
+            "XswapFactory: INSUFFICIENT_LIQUIDITY"
         );
         amountB = amountA.mul(reserveB) / reserveA;
     }
@@ -902,10 +902,10 @@ contract StarFactory is IStarFactory {
         uint256 reserveIn,
         uint256 reserveOut
     ) public view returns (uint256 amountOut) {
-        require(amountIn > 0, "StarSwapFactory: INSUFFICIENT_INPUT_AMOUNT");
+        require(amountIn > 0, "XswapFactory: INSUFFICIENT_INPUT_AMOUNT");
         require(
             reserveIn > 0 && reserveOut > 0,
-            "StarSwapFactory: INSUFFICIENT_LIQUIDITY"
+            "XswapFactory: INSUFFICIENT_LIQUIDITY"
         );
         uint256 amountInWithFee = amountIn.mul(997);
         uint256 numerator = amountInWithFee.mul(reserveOut);
@@ -919,10 +919,10 @@ contract StarFactory is IStarFactory {
         uint256 reserveIn,
         uint256 reserveOut
     ) public view returns (uint256 amountIn) {
-        require(amountOut > 0, "StarSwapFactory: INSUFFICIENT_OUTPUT_AMOUNT");
+        require(amountOut > 0, "XswapFactory: INSUFFICIENT_OUTPUT_AMOUNT");
         require(
             reserveIn > 0 && reserveOut > 0,
-            "StarSwapFactory: INSUFFICIENT_LIQUIDITY"
+            "XswapFactory: INSUFFICIENT_LIQUIDITY"
         );
         uint256 numerator = reserveIn.mul(amountOut).mul(1000);
         uint256 denominator = reserveOut.sub(amountOut).mul(997);
@@ -935,7 +935,7 @@ contract StarFactory is IStarFactory {
         view
         returns (uint256[] memory amounts)
     {
-        require(path.length >= 2, "StarSwapFactory: INVALID_PATH");
+        require(path.length >= 2, "XswapFactory: INVALID_PATH");
         amounts = new uint256[](path.length);
         amounts[0] = amountIn;
         for (uint256 i; i < path.length - 1; i++) {
@@ -951,7 +951,7 @@ contract StarFactory is IStarFactory {
         view
         returns (uint256[] memory amounts)
     {
-        require(path.length >= 2, "StarSwapFactory: INVALID_PATH");
+        require(path.length >= 2, "XswapFactory: INVALID_PATH");
         amounts = new uint256[](path.length);
         amounts[amounts.length - 1] = amountOut;
         for (uint256 i = path.length - 1; i > 0; i--) {

@@ -635,7 +635,7 @@ library SafeERC20 {
     }
 }
 
-interface IStarPair {
+interface IXswapPair {
     event Approval(
         address indexed owner,
         address indexed spender,
@@ -1076,11 +1076,11 @@ contract Repurchase is Ownable {
     EnumerableSet.AddressSet private _caller;
 
     address public constant USDT = 0xe579156f9dEcc4134B5E3A30a24Ac46BB8B01281;
-    address public constant STAR = 0x86936B61b490D2608F57A0b53aDE3eeF4cbD3EF9;
-    address public constant STAR_USDT =
-        0x12Fc541d35f9F040C9C6233988144DFa5EB0986A;
+    address public constant XT = 0xE5e399B4D0b721bD0B616E076e07E4416B78AA3E;
+    address public constant XT_USDT =
+        0x172a378B1aB64333bE2faa54C96476E5389F30AB;
     address public constant destroyAddress =
-        0x6020e198e4f597E57Aeb68F78DC69439231fa723;
+        0x826444801e15f5C0e54ea3a59e81b176C557Dd6e;
     address public emergencyAddress;
     uint256 public amountIn;
 
@@ -1129,13 +1129,13 @@ contract Repurchase is Ownable {
             "Insufficient contract balance"
         );
         (uint256 reserve0, uint256 reserve1, ) =
-            IStarPair(STAR_USDT).getReserves();
+            IXswapPair(XT_USDT).getReserves();
         uint256 amountInWithFee = amountIn.mul(997);
         amountOut =
             amountIn.mul(997).mul(reserve0) /
             reserve1.mul(1000).add(amountInWithFee);
-        IERC20(USDT).safeTransfer(STAR_USDT, amountIn);
-        IStarPair(STAR_USDT).swap(amountOut, 0, destroyAddress, new bytes(0));
+        IERC20(USDT).safeTransfer(XT_USDT, amountIn);
+        IXswapPair(XT_USDT).swap(amountOut, 0, destroyAddress, new bytes(0));
     }
 
     modifier onlyCaller() {

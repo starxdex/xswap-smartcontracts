@@ -954,7 +954,7 @@ library EnumerableSet {
     }
 }
 
-interface IStar is IERC20 {
+interface IXT is IERC20 {
     function mint(address to, uint256 amount) external returns (bool);
 }
 
@@ -965,13 +965,13 @@ contract TimeRelease is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
     EnumerableSet.AddressSet private _releaser;
 
-    address public constant STAR = 0x86936B61b490D2608F57A0b53aDE3eeF4cbD3EF9;
+    address public constant XT = 0xE5e399B4D0b721bD0B616E076e07E4416B78AA3E;
 
     struct ReleaseInfo {
         address releaseTo;
         uint256 releaseAmount;
         uint256 maxAmount;
-        uint256 starPerBlock;
+        uint256 xtPerBlock;
         uint256 startBlock;
     }
 
@@ -984,12 +984,12 @@ contract TimeRelease is Ownable {
     function addReleaseInfo(
         address _releaseTo,
         uint256 _maxAmount,
-        uint256 _starPerBlock,
+        uint256 _xtPerBlock,
         uint256 _startBlock
     ) public onlyOwner {
         require(_releaseTo != address(0), "Is zero address");
         require(_maxAmount >= 0, "Max amount is error");
-        require(_starPerBlock >= 0, "Star per block is error");
+        require(_xtPerBlock >= 0, "XT per block is error");
         require(_startBlock >= 0, "Start block is error");
         if (!EnumerableSet.contains(_releaser, _releaseTo)) {
             releasePool.push(
@@ -997,7 +997,7 @@ contract TimeRelease is Ownable {
                     releaseTo: _releaseTo,
                     releaseAmount: 0,
                     maxAmount: _maxAmount,
-                    starPerBlock: _starPerBlock,
+                    xtPerBlock: _xtPerBlock,
                     startBlock: _startBlock
                 })
             );
@@ -1007,7 +1007,7 @@ contract TimeRelease is Ownable {
             uint256 pid = releasePidMap[address(_releaseTo)];
             ReleaseInfo storage pool = releasePool[pid];
             pool.maxAmount = _maxAmount;
-            pool.starPerBlock = _starPerBlock;
+            pool.xtPerBlock = _xtPerBlock;
             pool.startBlock = _startBlock;
             releasePool[pid] = pool;
         }
@@ -1016,28 +1016,28 @@ contract TimeRelease is Ownable {
     function setReleaseInfo(
         uint256 _pid,
         uint256 _maxAmount,
-        uint256 _starPerBlock
+        uint256 _xtPerBlock
     ) public onlyOwner {
         require(_pid < releasePoolLength(), "pid is error");
         require(_maxAmount >= 0, "Max amount is error");
-        require(_starPerBlock >= 0, "Star per block is error");
+        require(_xtPerBlock >= 0, "XT per block is error");
         ReleaseInfo storage pool = releasePool[_pid];
         pool.maxAmount = _maxAmount;
-        pool.starPerBlock = _starPerBlock;
+        pool.xtPerBlock = _xtPerBlock;
         releasePool[_pid] = pool;
     }
 
     function release(uint256 _pid) public onlyOwner returns (bool) {
         require(_pid < releasePoolLength(), "pid is error");
         ReleaseInfo storage pool = releasePool[_pid];
-        if (pool.starPerBlock <= 0) {
+        if (pool.xtPerBlock <= 0) {
             return false;
         }
         if (block.number < pool.startBlock) {
             return false;
         }
         uint256 totalRelease =
-            (block.number.sub(pool.startBlock)).mul(pool.starPerBlock);
+            (block.number.sub(pool.startBlock)).mul(pool.xtPerBlock);
         if (totalRelease > pool.maxAmount) {
             totalRelease = pool.maxAmount;
         }
@@ -1045,7 +1045,7 @@ contract TimeRelease is Ownable {
             return false;
         }
         uint256 _amount = totalRelease.sub(pool.releaseAmount);
-        IStar(STAR).mint(address(pool.releaseTo), _amount);
+        IXT(XT).mint(address(pool.releaseTo), _amount);
         pool.releaseAmount = pool.releaseAmount.add(_amount);
         releasePool[_pid] = pool;
         return true;

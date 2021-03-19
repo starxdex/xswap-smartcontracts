@@ -1,6 +1,6 @@
 pragma solidity =0.6.6;
 
-interface IStarFactory {
+interface IXswapFactory {
     event PairCreated(
         address indexed token0,
         address indexed token1,
@@ -81,7 +81,7 @@ interface IStarFactory {
         returns (uint256[] memory amounts);
 }
 
-interface IStarPair {
+interface IXswapPair {
     event Approval(
         address indexed owner,
         address indexed spender,
@@ -281,7 +281,7 @@ library FixedPoint {
     }
 }
 
-library StarOracleLibrary {
+library XswapOracleLibrary {
     using FixedPoint for *;
 
     // helper function that returns the current block timestamp within the range of uint32, i.e. [0, 2**32 - 1]
@@ -300,12 +300,12 @@ library StarOracleLibrary {
         )
     {
         blockTimestamp = currentBlockTimestamp();
-        price0Cumulative = IStarPair(pair).price0CumulativeLast();
-        price1Cumulative = IStarPair(pair).price1CumulativeLast();
+        price0Cumulative = IXswapPair(pair).price0CumulativeLast();
+        price1Cumulative = IXswapPair(pair).price1CumulativeLast();
 
         // if time has elapsed since the last update on the pair, mock the accumulated price values
         (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) =
-            IStarPair(pair).getReserves();
+            IXswapPair(pair).getReserves();
         if (blockTimestampLast != blockTimestamp) {
             // subtraction overflow is desired
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;
@@ -343,13 +343,13 @@ contract Oracle {
     }
 
     function update(address tokenA, address tokenB) external {
-        address pair = IStarFactory(factory).pairFor(tokenA, tokenB);
+        address pair = IXswapFactory(factory).pairFor(tokenA, tokenB);
 
         Observation storage observation = pairObservations[pair];
         uint256 timeElapsed = block.timestamp - observation.timestamp;
-        require(timeElapsed >= CYCLE, "STAROracle: PERIOD_NOT_ELAPSED");
+        require(timeElapsed >= CYCLE, "XSWAPOracle: PERIOD_NOT_ELAPSED");
         (uint256 price0Cumulative, uint256 price1Cumulative, ) =
-            StarOracleLibrary.currentCumulativePrices(pair);
+            XswapOracleLibrary.currentCumulativePrices(pair);
         observation.timestamp = block.timestamp;
         observation.price0Cumulative = price0Cumulative;
         observation.price1Cumulative = price1Cumulative;
@@ -376,13 +376,13 @@ contract Oracle {
         uint256 amountIn,
         address tokenOut
     ) external view returns (uint256 amountOut) {
-        address pair = IStarFactory(factory).pairFor(tokenIn, tokenOut);
+        address pair = IXswapFactory(factory).pairFor(tokenIn, tokenOut);
         Observation storage observation = pairObservations[pair];
         uint256 timeElapsed = block.timestamp - observation.timestamp;
         (uint256 price0Cumulative, uint256 price1Cumulative, ) =
-            StarOracleLibrary.currentCumulativePrices(pair);
+            XswapOracleLibrary.currentCumulativePrices(pair);
         (address token0, ) =
-            IStarFactory(factory).sortTokens(tokenIn, tokenOut);
+            IXswapFactory(factory).sortTokens(tokenIn, tokenOut);
 
         if (token0 == tokenIn) {
             return

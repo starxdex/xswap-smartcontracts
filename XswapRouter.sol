@@ -1,6 +1,6 @@
 pragma solidity =0.6.6;
 
-interface IStarFactory {
+interface IXswapFactory {
     event PairCreated(
         address indexed token0,
         address indexed token1,
@@ -81,7 +81,7 @@ interface IStarFactory {
         returns (uint256[] memory amounts);
 }
 
-interface IStarPair {
+interface IXswapPair {
     event Approval(
         address indexed owner,
         address indexed spender,
@@ -195,7 +195,7 @@ interface IStarPair {
     function initialize(address, address) external;
 }
 
-interface IStarRouter {
+interface IXswapRouter {
     function factory() external pure returns (address);
 
     function WOKT() external pure returns (address);
@@ -497,7 +497,7 @@ interface IWOKT {
     function withdraw(uint256) external;
 }
 
-contract StarRouter is IStarRouter, Ownable {
+contract XswapRouter is IXswapRouter, Ownable {
     using SafeMath for uint256;
 
     address public immutable override factory;
@@ -505,7 +505,7 @@ contract StarRouter is IStarRouter, Ownable {
     address public override swapMining;
 
     modifier ensure(uint256 deadline) {
-        require(deadline >= block.timestamp, "StarRouter: EXPIRED");
+        require(deadline >= block.timestamp, "XswapRouter: EXPIRED");
         _;
     }
 
@@ -524,7 +524,7 @@ contract StarRouter is IStarRouter, Ownable {
         view
         returns (address pair)
     {
-        pair = IStarFactory(factory).pairFor(tokenA, tokenB);
+        pair = IXswapFactory(factory).pairFor(tokenA, tokenB);
     }
 
     function setSwapMining(address _swapMininng) public onlyOwner {
@@ -541,25 +541,29 @@ contract StarRouter is IStarRouter, Ownable {
         uint256 amountBMin
     ) internal virtual returns (uint256 amountA, uint256 amountB) {
         // create the pair if it doesn't exist yet
-        if (IStarFactory(factory).getPair(tokenA, tokenB) == address(0)) {
-            IStarFactory(factory).createPair(tokenA, tokenB);
+        if (IXswapFactory(factory).getPair(tokenA, tokenB) == address(0)) {
+            IXswapFactory(factory).createPair(tokenA, tokenB);
         }
         (uint256 reserveA, uint256 reserveB) =
-            IStarFactory(factory).getReserves(tokenA, tokenB);
+            IXswapFactory(factory).getReserves(tokenA, tokenB);
         if (reserveA == 0 && reserveB == 0) {
             (amountA, amountB) = (amountADesired, amountBDesired);
         } else {
             uint256 amountBOptimal =
-                IStarFactory(factory).quote(amountADesired, reserveA, reserveB);
+                IXswapFactory(factory).quote(
+                    amountADesired,
+                    reserveA,
+                    reserveB
+                );
             if (amountBOptimal <= amountBDesired) {
                 require(
                     amountBOptimal >= amountBMin,
-                    "StarRouter: INSUFFICIENT_B_AMOUNT"
+                    "XswapRouter: INSUFFICIENT_B_AMOUNT"
                 );
                 (amountA, amountB) = (amountADesired, amountBOptimal);
             } else {
                 uint256 amountAOptimal =
-                    IStarFactory(factory).quote(
+                    IXswapFactory(factory).quote(
                         amountBDesired,
                         reserveB,
                         reserveA
@@ -567,7 +571,7 @@ contract StarRouter is IStarRouter, Ownable {
                 assert(amountAOptimal <= amountADesired);
                 require(
                     amountAOptimal >= amountAMin,
-                    "StarRouter: INSUFFICIENT_A_AMOUNT"
+                    "XswapRouter: INSUFFICIENT_A_AMOUNT"
                 );
                 (amountA, amountB) = (amountAOptimal, amountBDesired);
             }
@@ -605,7 +609,7 @@ contract StarRouter is IStarRouter, Ownable {
         address pair = pairFor(tokenA, tokenB);
         TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);
         TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
-        liquidity = IStarPair(pair).mint(to);
+        liquidity = IXswapPair(pair).mint(to);
     }
 
     function addLiquidityETH(
@@ -639,7 +643,7 @@ contract StarRouter is IStarRouter, Ownable {
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
         IWOKT(WOKT).deposit{value: amountETH}();
         assert(IWOKT(WOKT).transfer(pair, amountETH));
-        liquidity = IStarPair(pair).mint(to);
+        liquidity = IXswapPair(pair).mint(to);
         // refund dust eth, if any
         if (msg.value > amountETH)
             TransferHelper.safeTransferETH(msg.sender, msg.value - amountETH);
@@ -662,15 +666,15 @@ contract StarRouter is IStarRouter, Ownable {
         returns (uint256 amountA, uint256 amountB)
     {
         address pair = pairFor(tokenA, tokenB);
-        IStarPair(pair).transferFrom(msg.sender, pair, liquidity);
+        IXswapPair(pair).transferFrom(msg.sender, pair, liquidity);
         // send liquidity to pair
-        (uint256 amount0, uint256 amount1) = IStarPair(pair).burn(to);
-        (address token0, ) = IStarFactory(factory).sortTokens(tokenA, tokenB);
+        (uint256 amount0, uint256 amount1) = IXswapPair(pair).burn(to);
+        (address token0, ) = IXswapFactory(factory).sortTokens(tokenA, tokenB);
         (amountA, amountB) = tokenA == token0
             ? (amount0, amount1)
             : (amount1, amount0);
-        require(amountA >= amountAMin, "StarRouter: INSUFFICIENT_A_AMOUNT");
-        require(amountB >= amountBMin, "StarRouter: INSUFFICIENT_B_AMOUNT");
+        require(amountA >= amountAMin, "XswapRouter: INSUFFICIENT_A_AMOUNT");
+        require(amountB >= amountBMin, "XswapRouter: INSUFFICIENT_B_AMOUNT");
     }
 
     function removeLiquidityETH(
@@ -716,7 +720,7 @@ contract StarRouter is IStarRouter, Ownable {
     ) external virtual override returns (uint256 amountA, uint256 amountB) {
         address pair = pairFor(tokenA, tokenB);
         uint256 value = approveMax ? uint256(-1) : liquidity;
-        IStarPair(pair).permit(
+        IXswapPair(pair).permit(
             msg.sender,
             address(this),
             value,
@@ -755,7 +759,7 @@ contract StarRouter is IStarRouter, Ownable {
     {
         address pair = pairFor(token, WOKT);
         uint256 value = approveMax ? uint256(-1) : liquidity;
-        IStarPair(pair).permit(
+        IXswapPair(pair).permit(
             msg.sender,
             address(this),
             value,
@@ -815,7 +819,7 @@ contract StarRouter is IStarRouter, Ownable {
     ) external virtual override returns (uint256 amountETH) {
         address pair = pairFor(token, WOKT);
         uint256 value = approveMax ? uint256(-1) : liquidity;
-        IStarPair(pair).permit(
+        IXswapPair(pair).permit(
             msg.sender,
             address(this),
             value,
@@ -844,7 +848,7 @@ contract StarRouter is IStarRouter, Ownable {
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
             (address token0, ) =
-                IStarFactory(factory).sortTokens(input, output);
+                IXswapFactory(factory).sortTokens(input, output);
             uint256 amountOut = amounts[i + 1];
             if (swapMining != address(0)) {
                 ISwapMining(swapMining).swap(
@@ -860,7 +864,7 @@ contract StarRouter is IStarRouter, Ownable {
                     : (amountOut, uint256(0));
             address to =
                 i < path.length - 2 ? pairFor(output, path[i + 2]) : _to;
-            IStarPair(pairFor(input, output)).swap(
+            IXswapPair(pairFor(input, output)).swap(
                 amount0Out,
                 amount1Out,
                 to,
@@ -882,10 +886,10 @@ contract StarRouter is IStarRouter, Ownable {
         ensure(deadline)
         returns (uint256[] memory amounts)
     {
-        amounts = IStarFactory(factory).getAmountsOut(amountIn, path);
+        amounts = IXswapFactory(factory).getAmountsOut(amountIn, path);
         require(
             amounts[amounts.length - 1] >= amountOutMin,
-            "StarRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+            "XswapRouter: INSUFFICIENT_OUTPUT_AMOUNT"
         );
         TransferHelper.safeTransferFrom(
             path[0],
@@ -909,10 +913,10 @@ contract StarRouter is IStarRouter, Ownable {
         ensure(deadline)
         returns (uint256[] memory amounts)
     {
-        amounts = IStarFactory(factory).getAmountsIn(amountOut, path);
+        amounts = IXswapFactory(factory).getAmountsIn(amountOut, path);
         require(
             amounts[0] <= amountInMax,
-            "StarRouter: EXCESSIVE_INPUT_AMOUNT"
+            "XswapRouter: EXCESSIVE_INPUT_AMOUNT"
         );
         TransferHelper.safeTransferFrom(
             path[0],
@@ -936,11 +940,11 @@ contract StarRouter is IStarRouter, Ownable {
         ensure(deadline)
         returns (uint256[] memory amounts)
     {
-        require(path[0] == WOKT, "StarRouter: INVALID_PATH");
-        amounts = IStarFactory(factory).getAmountsOut(msg.value, path);
+        require(path[0] == WOKT, "XswapRouter: INVALID_PATH");
+        amounts = IXswapFactory(factory).getAmountsOut(msg.value, path);
         require(
             amounts[amounts.length - 1] >= amountOutMin,
-            "StarRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+            "XswapRouter: INSUFFICIENT_OUTPUT_AMOUNT"
         );
         IWOKT(WOKT).deposit{value: amounts[0]}();
         assert(IWOKT(WOKT).transfer(pairFor(path[0], path[1]), amounts[0]));
@@ -960,11 +964,11 @@ contract StarRouter is IStarRouter, Ownable {
         ensure(deadline)
         returns (uint256[] memory amounts)
     {
-        require(path[path.length - 1] == WOKT, "StarRouter: INVALID_PATH");
-        amounts = IStarFactory(factory).getAmountsIn(amountOut, path);
+        require(path[path.length - 1] == WOKT, "XswapRouter: INVALID_PATH");
+        amounts = IXswapFactory(factory).getAmountsIn(amountOut, path);
         require(
             amounts[0] <= amountInMax,
-            "StarRouter: EXCESSIVE_INPUT_AMOUNT"
+            "XswapRouter: EXCESSIVE_INPUT_AMOUNT"
         );
         TransferHelper.safeTransferFrom(
             path[0],
@@ -990,11 +994,11 @@ contract StarRouter is IStarRouter, Ownable {
         ensure(deadline)
         returns (uint256[] memory amounts)
     {
-        require(path[path.length - 1] == WOKT, "StarRouter: INVALID_PATH");
-        amounts = IStarFactory(factory).getAmountsOut(amountIn, path);
+        require(path[path.length - 1] == WOKT, "XswapRouter: INVALID_PATH");
+        amounts = IXswapFactory(factory).getAmountsOut(amountIn, path);
         require(
             amounts[amounts.length - 1] >= amountOutMin,
-            "StarRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+            "XswapRouter: INSUFFICIENT_OUTPUT_AMOUNT"
         );
         TransferHelper.safeTransferFrom(
             path[0],
@@ -1020,9 +1024,9 @@ contract StarRouter is IStarRouter, Ownable {
         ensure(deadline)
         returns (uint256[] memory amounts)
     {
-        require(path[0] == WOKT, "StarRouter: INVALID_PATH");
-        amounts = IStarFactory(factory).getAmountsIn(amountOut, path);
-        require(amounts[0] <= msg.value, "StarRouter: EXCESSIVE_INPUT_AMOUNT");
+        require(path[0] == WOKT, "XswapRouter: INVALID_PATH");
+        amounts = IXswapFactory(factory).getAmountsIn(amountOut, path);
+        require(amounts[0] <= msg.value, "XswapRouter: EXCESSIVE_INPUT_AMOUNT");
         IWOKT(WOKT).deposit{value: amounts[0]}();
         assert(IWOKT(WOKT).transfer(pairFor(path[0], path[1]), amounts[0]));
         _swap(amounts, path, to);
@@ -1040,8 +1044,8 @@ contract StarRouter is IStarRouter, Ownable {
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
             (address token0, ) =
-                IStarFactory(factory).sortTokens(input, output);
-            IStarPair pair = IStarPair(pairFor(input, output));
+                IXswapFactory(factory).sortTokens(input, output);
+            IXswapPair pair = IXswapPair(pairFor(input, output));
             uint256 amountInput;
             uint256 amountOutput;
             {
@@ -1054,7 +1058,7 @@ contract StarRouter is IStarRouter, Ownable {
                 amountInput = IERC20(input).balanceOf(address(pair)).sub(
                     reserveInput
                 );
-                amountOutput = IStarFactory(factory).getAmountOut(
+                amountOutput = IXswapFactory(factory).getAmountOut(
                     amountInput,
                     reserveInput,
                     reserveOutput
@@ -1096,7 +1100,7 @@ contract StarRouter is IStarRouter, Ownable {
         require(
             IERC20(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >=
                 amountOutMin,
-            "StarRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+            "XswapRouter: INSUFFICIENT_OUTPUT_AMOUNT"
         );
     }
 
@@ -1106,7 +1110,7 @@ contract StarRouter is IStarRouter, Ownable {
         address to,
         uint256 deadline
     ) external payable virtual override ensure(deadline) {
-        require(path[0] == WOKT, "StarRouter: INVALID_PATH");
+        require(path[0] == WOKT, "XswapRouter: INVALID_PATH");
         uint256 amountIn = msg.value;
         IWOKT(WOKT).deposit{value: amountIn}();
         assert(IWOKT(WOKT).transfer(pairFor(path[0], path[1]), amountIn));
@@ -1115,7 +1119,7 @@ contract StarRouter is IStarRouter, Ownable {
         require(
             IERC20(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >=
                 amountOutMin,
-            "StarRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+            "XswapRouter: INSUFFICIENT_OUTPUT_AMOUNT"
         );
     }
 
@@ -1126,7 +1130,7 @@ contract StarRouter is IStarRouter, Ownable {
         address to,
         uint256 deadline
     ) external virtual override ensure(deadline) {
-        require(path[path.length - 1] == WOKT, "StarRouter: INVALID_PATH");
+        require(path[path.length - 1] == WOKT, "XswapRouter: INVALID_PATH");
         TransferHelper.safeTransferFrom(
             path[0],
             msg.sender,
@@ -1137,7 +1141,7 @@ contract StarRouter is IStarRouter, Ownable {
         uint256 amountOut = IERC20(WOKT).balanceOf(address(this));
         require(
             amountOut >= amountOutMin,
-            "StarRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+            "XswapRouter: INSUFFICIENT_OUTPUT_AMOUNT"
         );
         IWOKT(WOKT).withdraw(amountOut);
         TransferHelper.safeTransferETH(to, amountOut);
@@ -1149,7 +1153,7 @@ contract StarRouter is IStarRouter, Ownable {
         uint256 reserveA,
         uint256 reserveB
     ) public view override returns (uint256 amountB) {
-        return IStarFactory(factory).quote(amountA, reserveA, reserveB);
+        return IXswapFactory(factory).quote(amountA, reserveA, reserveB);
     }
 
     function getAmountOut(
@@ -1158,7 +1162,11 @@ contract StarRouter is IStarRouter, Ownable {
         uint256 reserveOut
     ) public view override returns (uint256 amountOut) {
         return
-            IStarFactory(factory).getAmountOut(amountIn, reserveIn, reserveOut);
+            IXswapFactory(factory).getAmountOut(
+                amountIn,
+                reserveIn,
+                reserveOut
+            );
     }
 
     function getAmountIn(
@@ -1167,7 +1175,11 @@ contract StarRouter is IStarRouter, Ownable {
         uint256 reserveOut
     ) public view override returns (uint256 amountIn) {
         return
-            IStarFactory(factory).getAmountIn(amountOut, reserveIn, reserveOut);
+            IXswapFactory(factory).getAmountIn(
+                amountOut,
+                reserveIn,
+                reserveOut
+            );
     }
 
     function getAmountsOut(uint256 amountIn, address[] memory path)
@@ -1176,7 +1188,7 @@ contract StarRouter is IStarRouter, Ownable {
         override
         returns (uint256[] memory amounts)
     {
-        return IStarFactory(factory).getAmountsOut(amountIn, path);
+        return IXswapFactory(factory).getAmountsOut(amountIn, path);
     }
 
     function getAmountsIn(uint256 amountOut, address[] memory path)
@@ -1185,7 +1197,7 @@ contract StarRouter is IStarRouter, Ownable {
         override
         returns (uint256[] memory amounts)
     {
-        return IStarFactory(factory).getAmountsIn(amountOut, path);
+        return IXswapFactory(factory).getAmountsIn(amountOut, path);
     }
 }
 
