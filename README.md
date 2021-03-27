@@ -49,6 +49,15 @@
 | OKT/BTCK 交易对 | 800:1 | 0x5562dAF6F0bd0ed651Df008416D6C114E83e8221 | pid: 13 |
 | XT 单币种 |  |  | pid: 14 |
 | USDT 单币种 |  |  | pid: 15 |
+| OKB 单币种 |  |  | pid: 16 |
+| USDK 单币种 |  |  | pid: 17 |
+| USDC 单币种 |  |  | pid: 18 |
+| BTCK 单币种 |  |  | pid: 19 |
+| ETHK 单币种 |  |  | pid: 20 |
+| DOTK 单币种 |  |  | pid: 21 |
+| FILK 单币种 |  |  | pid: 22 |
+| LTCK 单币种 |  |  | pid: 23 |
+| WOKT 单币种 |  |  | pid: 24 |
 
 ### 开启交易挖矿的币对
 XT/USDT, XT/BTCK, XT/OKB, XT/ETHK, XT/OKT
