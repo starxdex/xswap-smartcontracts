@@ -1076,11 +1076,11 @@ contract Repurchase is Ownable {
     EnumerableSet.AddressSet private _caller;
 
     address public constant USDT = 0xe579156f9dEcc4134B5E3A30a24Ac46BB8B01281;
-    address public constant XT = 0xE5e399B4D0b721bD0B616E076e07E4416B78AA3E;
+    address public constant XT = 0x2698598b98175bB5d20f69063d5CD99514D63819;
     address public constant XT_USDT =
-        0x172a378B1aB64333bE2faa54C96476E5389F30AB;
+        0xd1c0789E355D867fF133C88c77211A09aB833060;
     address public constant destroyAddress =
-        0x826444801e15f5C0e54ea3a59e81b176C557Dd6e;
+        0x3250d749FF3800ac9dB12a5b507bF6E77de887EA;
     address public emergencyAddress;
     uint256 public amountIn;
 
