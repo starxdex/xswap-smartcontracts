@@ -941,7 +941,7 @@ interface IMasterChefOktLink {
     function emergencyWithdraw(uint256 pid) external;
 }
 
-contract OktLinkPool is Ownable {
+contract XswapPool is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
