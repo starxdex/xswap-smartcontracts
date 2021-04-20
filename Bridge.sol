@@ -199,25 +199,42 @@ contract Bridge is Ownable {
     //     address userAddress;
     // }
 
+    struct TokenInfo {
+        address token;
+        uint256 fixFee;
+        uint256 transMinLimit;
+    }
+
     mapping(address => bool) public supportedTokens;
     bool public paused = false;
     uint256 public chainId;
-    // mapping(uint256 => Order) public transferInOrder;
+    mapping(address => TokenInfo) public tokenInfo;
     mapping(uint256 => mapping(uint256 => bool)) public transferOutOrderIds; // chainId => OrderId
     address public transferOperator;
     address public withdrawOperator;
-    uint256 public feeRate = 3;
+    uint256 public feeRate = 0;
+
     uint256 public oid = 0;
 
     event TransferIn(uint256 indexed id, address token, uint256 amount, uint256 fee, uint256 toChainId, address addressTo);
     event TransferOut(uint256 id, uint256 fromChainId, address token, uint256 amount, address addressTo);
     event Withdraw(address token, uint256 amount);
 
-    constructor(uint256 _chainId, address _transferOperator, address _withdrawOperator, uint256 startOid) public {
+    constructor(uint256 _chainId, address _transferOperator, address _withdrawOperator, uint256 startOid, address firstToken,
+        uint256 firstTokenFixFee, uint256 firstTokenTransMinLimit) public {
         chainId = _chainId;
         transferOperator = _transferOperator;
         withdrawOperator = _withdrawOperator;
         oid = startOid;
+        TokenInfo storage t = tokenInfo[firstToken];
+        t.token = firstToken;
+        t.fixFee = firstTokenFixFee;
+        t.transMinLimit = firstTokenTransMinLimit;
+        supportedTokens[firstToken] = true;
+    }
+
+    function setFeeRate(uint256 _feeRate) public onlyOwner {
+        feeRate = _feeRate;
     }
     function setTransferOperator(address _transferOperator) public onlyOwner {
         transferOperator = _transferOperator;
@@ -226,26 +243,31 @@ contract Bridge is Ownable {
         withdrawOperator = _withdrawOperator;
     }
     function setPaused(bool _paused) public onlyOwner {
-    paused = _paused;
+        paused = _paused;
     }
-    function addSupportedToken(address _token) public onlyOwner {
-    supportedTokens[_token] = true;
+    function addSupportedToken(address _token, uint256 _fixFee, uint256 _transMinLimit) public onlyOwner {
+        supportedTokens[_token] = true;
+        TokenInfo storage t = tokenInfo[_token];
+        t.token = _token;
+        t.fixFee = _fixFee;
+        t.transMinLimit = _transMinLimit;
+
     }
     function removeSupportedToken(address _token) public onlyOwner {
-    supportedTokens[_token] = false;
+        supportedTokens[_token] = false;
     }
 
-//    function isSupportedToken(address _token) public view
 
 
     function transferIn(address _token, uint256 _amount, uint256 _chainId, address _addressTo)  public returns (uint256) {
         require(!paused, "Bridge is stopped");
         require(_addressTo==msg.sender, "addressTo should be same with msgSender");
         require(supportedTokens[_token], "token not supported");
+        require(tokenInfo[_token].transMinLimit <= _amount, "Trans amount is too small");
         uint256 orderId= oid;
         oid = oid + 1;
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 fee = _amount*feeRate/1000;
+        uint256 fee = _amount*feeRate/1000 + tokenInfo[_token].fixFee;
         emit TransferIn(orderId, _token, _amount, fee, _chainId, _addressTo);
         return orderId;
     }
