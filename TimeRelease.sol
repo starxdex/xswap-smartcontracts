@@ -965,7 +965,7 @@ contract TimeRelease is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
     EnumerableSet.AddressSet private _releaser;
 
-    address public constant XT = 0x2698598b98175bB5d20f69063d5CD99514D63819;
+    address public constant XT = 0x40EB68Bc3B7fA9C2D4AE6a0298697641A65a9A31;
 
     struct ReleaseInfo {
         address releaseTo;

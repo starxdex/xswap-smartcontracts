@@ -292,7 +292,7 @@ contract XTERC20 is IXTERC20 {
     using SafeMath for uint256;
 
     string public constant name = "Xswap LP Token";
-    string public constant symbol = "OKXT";
+    string public constant symbol = "XTLP";
     uint8 public constant decimals = 18;
     uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;

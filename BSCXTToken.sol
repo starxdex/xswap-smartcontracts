@@ -1474,6 +1474,8 @@ abstract contract DelegateERC20 is ERC20 {
 }
 
 contract XTToken is DelegateERC20, Ownable {
+    uint256 private constant marketMineSupply = 1000000 * 1e18;
+
     uint256 private constant maxSupply = 130000000 * 1e18; // the total supply
 
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -1487,7 +1489,9 @@ contract XTToken is DelegateERC20, Ownable {
 
     mapping(address => MinterInfo) public minterInfo;
 
-    constructor() public ERC20("Xswap Token", "XT") {}
+    constructor() public ERC20("Xswap Token", "XT") {
+        _mint(msg.sender, marketMineSupply);
+    }
 
     // mint with max supply
     function mint(address _to, uint256 _amount)
