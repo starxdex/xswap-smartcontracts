@@ -1075,16 +1075,31 @@ contract Repurchase is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
     EnumerableSet.AddressSet private _caller;
 
-    address public constant USDT = 0x55d398326f99059fF775485246999027B3197955;
-    address public constant XT = 0x40EB68Bc3B7fA9C2D4AE6a0298697641A65a9A31;
-    address public constant XT_USDT = 0x73d60E2568bA1d2334C9654b8D50C2304c5bcDc7;
-    address public constant destroyAddress = 0x709a3FcCDE2b6B5EC34745929Ce5aB743f3ff904;
+    address public USDT;
+    address public XT;
+    address public XT_USDT;
+    address public destroyAddress;
     address public emergencyAddress;
     uint256 public amountIn;
 
-    constructor(uint256 _amount, address _emergencyAddress) public {
+    constructor(
+        address _usdt,
+        address _xt,
+        address _xt_usdt,
+        address _destroyAddress,
+        uint256 _amount,
+        address _emergencyAddress
+    ) public {
+        require(_usdt != address(0), "Is zero address");
+        require(_xt != address(0), "Is zero address");
+        require(_xt_usdt != address(0), "Is zero address");
+        require(_destroyAddress != address(0), "Is zero address");
         require(_amount > 0, "Amount must be greater than zero");
         require(_emergencyAddress != address(0), "Is zero address");
+        USDT = _usdt;
+        XT = _xt;
+        XT_USDT = _xt_usdt;
+        destroyAddress = _destroyAddress;
         amountIn = _amount;
         emergencyAddress = _emergencyAddress;
     }

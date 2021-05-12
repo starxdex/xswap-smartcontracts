@@ -1487,7 +1487,9 @@ contract XTToken is DelegateERC20, Ownable {
 
     mapping(address => MinterInfo) public minterInfo;
 
-    constructor() public ERC20("Xswap Token", "XT") {}
+    constructor(uint256 marketMineSupply) public ERC20("Xswap Token", "XT") {
+        _mint(msg.sender, marketMineSupply);
+    }
 
     // mint with max supply
     function mint(address _to, uint256 _amount)

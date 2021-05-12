@@ -965,7 +965,7 @@ contract TimeRelease is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
     EnumerableSet.AddressSet private _releaser;
 
-    address public constant XT = 0x40EB68Bc3B7fA9C2D4AE6a0298697641A65a9A31;
+    address public XT;
 
     struct ReleaseInfo {
         address releaseTo;
@@ -979,7 +979,10 @@ contract TimeRelease is Ownable {
 
     mapping(address => uint256) public releasePidMap;
 
-    constructor() public {}
+    constructor(address _xt) public {
+        require(_xt != address(0), "Is zero address");
+        XT = _xt;
+    }
 
     function addReleaseInfo(
         address _releaseTo,
